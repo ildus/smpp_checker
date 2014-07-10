@@ -171,8 +171,9 @@ func checkMessages(chm chan *Msg, wg *sync.WaitGroup) {
 	}
 }
 
-func processRecords() {
+func processRecords() int {
 	var wg sync.WaitGroup
+	var count = 0
 	chm := make(chan *Msg, *workersCount)
 
 	rows, err := db.Query(sqlRecords, *sqlLimit)
@@ -189,12 +190,15 @@ func processRecords() {
 		msg := Msg{}
 		rows.Scan(&msg.id, &msg.externalId, &msg.smsc, &msg.url, &msg.phone)
 		chm <- &msg
+		count += 1
 	}
 	if err := rows.Err(); err != nil {
 		log.Fatal(err)
 	}
 	close(chm)
 	wg.Wait()
+
+	return count
 }
 
 func main() {
@@ -231,7 +235,8 @@ func main() {
 		log.Fatal(err)
 	}
 	for {
-		processRecords()
+		count := processRecords()
+		log.Printf("Processed %d records", count)
 		time.Sleep(time.Minute * 5)
 	}
 }
