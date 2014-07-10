@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -145,7 +146,7 @@ func processMessage(msg *Msg) {
 				callbackUrl := fmt.Sprintf(msg.url, httpResult.Status)
 				client := &http.Client{}
 				req, _ := http.NewRequest("GET", callbackUrl, nil)
-				req.Header.Add("SMSC-ERROR", string(httpResult.Err))
+				req.Header.Add("SMSC-ERROR", strconv.Itoa(httpResult.Err))
 				resp, err := client.Do(req)
 				if err != nil {
 					log.Printf("Msg %d callback error: %v", msg.externalId, err)
@@ -155,7 +156,7 @@ func processMessage(msg *Msg) {
 				if err != nil {
 					return
 				}
-				db.Exec(sqlUpdate, string(httpResult.Status), msg.id)
+				db.Exec(sqlUpdate, strconv.Itoa(httpResult.Status), msg.id)
 			}
 		}
 	}
