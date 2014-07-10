@@ -140,7 +140,9 @@ func processMessage(msg *Msg) {
 		json.Unmarshal(body, &httpResult)
 
 		if httpResult.ErrorCode > 0 {
-			log.Printf("Msg %d http error: %s", msg.externalId, httpResult.Error)
+			callbackUrl := fmt.Sprintf(msg.url, 2)
+			http.Get(callbackUrl)
+			db.Exec(sqlUpdate, "2", msg.id)
 		} else {
 			if httpResult.Status > 0 {
 				callbackUrl := fmt.Sprintf(msg.url, httpResult.Status)
