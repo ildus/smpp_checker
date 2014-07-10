@@ -8,6 +8,7 @@ import (
 	_ "github.com/lib/pq"
 	"io/ioutil"
 	"log"
+	"log/syslog"
 	"net/http"
 	"net/url"
 	"os"
@@ -21,7 +22,7 @@ import (
 var (
 	kannelConf   = flag.String("conf", "/etc/kannel/kannel.conf", "Location of kannel configuration")
 	workersCount = flag.Int("workers", 10, "Workers count")
-	sqlLimit     = flag.Int("limit", 10, "SQL query limit")
+	sqlLimit     = flag.Int("limit", 1000, "SQL query limit")
 	conf         *map[string]*Connection
 	db           *sql.DB
 )
@@ -194,6 +195,11 @@ func processRecords() {
 }
 
 func main() {
+	logwriter, e := syslog.New(syslog.LOG_NOTICE, "smsc_ru_checker")
+	if e == nil {
+		log.SetOutput(logwriter)
+	}
+
 	flag.Parse()
 	conf = loadConfiguration()
 
