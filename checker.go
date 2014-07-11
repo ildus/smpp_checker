@@ -24,6 +24,7 @@ var (
 	kannelConf   = flag.String("conf", "/etc/kannel/kannel.conf", "Location of kannel configuration")
 	workersCount = flag.Int("workers", 10, "Workers count")
 	sqlLimit     = flag.Int("limit", 1000, "SQL query limit")
+	pause        = flag.Int("pause", 60, "Pause between queries")
 	conf         *map[string]*Connection
 	db           *sql.DB
 )
@@ -237,6 +238,6 @@ func main() {
 	for {
 		count := processRecords()
 		log.Printf("Processed %d records", count)
-		time.Sleep(time.Minute * 5)
+		time.Sleep(time.Second * time.Duration(*pause))
 	}
 }
