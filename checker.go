@@ -27,6 +27,9 @@ var (
 	pause        = flag.Int("pause", 60, "Pause between queries")
 	conf         *map[string]*Connection
 	db           *sql.DB
+	isBlocked    = false
+	currentPause int
+	mu           sync.Mutex
 )
 
 const (
@@ -141,9 +144,16 @@ func processMessage(msg *Msg) {
 		json.Unmarshal(body, &httpResult)
 
 		if httpResult.ErrorCode > 0 {
-			callbackUrl := fmt.Sprintf(msg.url, 2)
-			http.Get(callbackUrl)
-			db.Exec(sqlUpdate, "2", msg.id)
+			if httpResult.ErrorCode >= 4 {
+				//temporary block
+				mu.Lock()
+				isBlocked = true
+				mu.Unlock()
+			} else {
+				callbackUrl := fmt.Sprintf(msg.url, 2)
+				http.Get(callbackUrl)
+				db.Exec(sqlUpdate, "2", msg.id)
+			}
 		} else {
 			if httpResult.Status > 0 {
 				callbackUrl := fmt.Sprintf(msg.url, httpResult.Status)
@@ -235,9 +245,17 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	for {
 		count := processRecords()
 		log.Printf("Processed %d records", count)
-		time.Sleep(time.Second * time.Duration(*pause))
+		if isBlocked {
+			currentPause = 60 * 10 // 10 minutes
+			isBlocked = false
+			log.Printf("Program is blocked temporarily. Next processing will start after %d seconds", currentPause)
+		} else {
+			currentPause = *pause
+		}
+		time.Sleep(time.Second * time.Duration(currentPause))
 	}
 }
